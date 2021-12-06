@@ -81,7 +81,7 @@ class TwitchRPC:
         system(f'title {APP_FULLNAME}')
 
     def is_twitch(self, title, url):
-        return True if "twitch" in title.lower() and "twitch" in url.lower() else False
+        return True if "twitch" in title.lower() and "twitch" in url.split('/')[2].lower() else False
 
     def detect_browsers(self):
         browsers = []
@@ -96,6 +96,7 @@ class TwitchRPC:
             self.message(Fore.LIGHTRED_EX, "Can't find websites in your browser history")
             return
         streamer = title.split(" ")[0]
+        previous_streamer = None
         if self.is_twitch(title, url):
             if streamer != previous_streamer:
                 start_time = time()
@@ -105,7 +106,6 @@ class TwitchRPC:
                 self.rpc.update(details='Offline', large_image="logo")
         
     def main_event(self):
-        previous_streamer = None
         while self.running:
             if self.browser.running():
                 self.update_presence()
@@ -179,5 +179,5 @@ class TwitchRPC:
             self.run()
 
 if __name__ == '__main__':
-    client = TwitchRPC(":D")
+    client = TwitchRPC("917032958622326804")
     client.run()
