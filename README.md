@@ -10,6 +10,8 @@
 ## Supported browsers
 > Currently in development..
 - Yandex Browser
+- Google Chrome
+- Microsoft Edge
 
 ## Usage
 1. Download the last version [here](https://github.com/manucabral/TwitchPresence/releases)
