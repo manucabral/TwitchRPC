@@ -102,8 +102,8 @@ class TwitchRPC:
                 start_time = time()
                 previous_streamer = streamer
                 self.rpc.update(details='Watching ' + title.split(" ")[0], start=start_time, large_image="logo")
-            else:
-                self.rpc.update(details='Offline', large_image="logo")
+        else:
+            self.rpc.update(details='Offline', large_image="logo")
         
     def main_event(self):
         while self.running:
@@ -179,5 +179,5 @@ class TwitchRPC:
             self.run()
 
 if __name__ == '__main__':
-    client = TwitchRPC("917032958622326804")
+    client = TwitchRPC(":D")
     client.run()
