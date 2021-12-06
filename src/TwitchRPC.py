@@ -1,4 +1,4 @@
-from subprocess import check_output
+from subprocess import check_output, PIPE
 from sqlite3 import connect
 from os import system, getenv, path
 from shutil import copy2
@@ -10,7 +10,13 @@ import sys
 APP_NAME = "TwitchRPC"
 APP_FULLNAME = "Twitch Rich Presence"
 AUTHOR = "ne0de"
-VERSION = "0.0.3"
+VERSION = "0.4"
+
+BROWSERS = [
+    ('Yandex', 'Yandex Browser', 'Chromium', 'browser.exe', '\\Yandex\\YandexBrowser\\User Data\\Default'),
+    ('Chrome', 'Google Chrome', 'Chromium', 'chrome.exe', '\\Google\\Chrome\\User Data\\Default'),
+    ('Edge', 'Microsoft Edge', 'Chromium', 'msedge.exe', '\\Microsoft\\Edge\\User Data\\Default')
+]
 
 BANNER = f'''
 {Fore.LIGHTMAGENTA_EX} 
@@ -27,18 +33,18 @@ BANNER = f'''
 Press {Fore.YELLOW}CTRL + C {Fore.RESET}to exit
 '''
 
-
 class Browser:
-    def __init__(self, name, full_name, process_name, local_path):
-        self.name = name
-        self.full_name = full_name
-        self.process_name = process_name
-        self.path = getenv("LOCALAPPDATA") + local_path
+    def __init__(self, args):
+        self.name = args[0]
+        self.full_name = args[1]
+        self.type = args[2]
+        self.process_name = args[3]
+        self.path = getenv("LOCALAPPDATA") + args[4]
         self.db_file = "\\History"
 
     def running(self):
         output = check_output(
-            f'wmic process where "name=\'{self.process_name}\'" get ExecutablePath', universal_newlines=True, stderr=subprocess.PIPE)
+            f'wmic process where "name=\'{self.process_name}\'" get ExecutablePath', universal_newlines=True, stderr=PIPE)
         return True if self.name.lower() in output.lower() else False
 
     def update_db_file(self):
@@ -57,16 +63,19 @@ class Browser:
 
     def current_website(self):
         path = self.update_db_file()
-        return self.execute_query(path, f"SELECT title, url from urls ORDER BY last_visit_time DESC limit 1")[0]
+        result = self.execute_query(path, f"SELECT title, url from urls ORDER BY last_visit_time DESC limit 1")
+        return (0, 0) if not result else result[0]
 
 
 class TwitchRPC:
     def __init__(self, client_id):
         self.client_id = client_id
-        self.browser = Browser("Yandex", "Yandex Browser", "browser.exe",
-                               "\\Yandex\\YandexBrowser\\User Data\\Default")
+        self.browser = None
         self.rpc = None
         self.running = False
+
+    def message(self, color, m):
+        print(color + m + Fore.RESET)
 
     def init_settings(self):
         system(f'title {APP_FULLNAME}')
@@ -74,19 +83,36 @@ class TwitchRPC:
     def is_twitch(self, title, url):
         return True if "twitch" in title.lower() and "twitch" in url.lower() else False
 
+    def detect_browsers(self):
+        browsers = []
+        for browser in BROWSERS:
+            output = check_output(f'wmic process where "name=\'{browser[3]}\'" get ExecutablePath', universal_newlines=True, stderr=PIPE)
+            browsers.append(browser) if browser[0].lower() in output.lower() else None
+        return browsers
+
+    def update_presence(self):
+        title, url = self.browser.current_website()
+        if title == 0:
+            self.message(Fore.LIGHTRED_EX, "Can't find websites in your browser history")
+            return
+        streamer = title.split(" ")[0]
+        if self.is_twitch(title, url):
+            if streamer != previous_streamer:
+                start_time = time()
+                previous_streamer = streamer
+                self.rpc.update(details='Watching ' + title.split(" ")[0], start=start_time, large_image="logo")
+            else:
+                self.rpc.update(details='Offline', large_image="logo")
+        
     def main_event(self):
         previous_streamer = None
         while self.running:
-            title, url = self.browser.current_website()
-            streamer = title.split(" ")[0]
-            if self.is_twitch(title, url):
-                if streamer != previous_streamer:
-                    start_time = time()
-                    previous_streamer = streamer
-                self.rpc.update(details='Watching ' +
-                                title.split(" ")[0], start=start_time)
+            if self.browser.running():
+                self.update_presence()
             else:
-                self.rpc.update(details='Offline')
+                self.message(Fore.CYAN, f'Could not locate {self.browser.name} process')
+                self.running = False
+                self.run()
             sleep(15)
 
     def connect_rpc(self):
@@ -94,21 +120,53 @@ class TwitchRPC:
             self.rpc = Presence(self.client_id, pipe=0)
             self.rpc.connect()
         except exceptions.DiscordNotFound:
-            print(f'{Fore.RED}Discord is not running{Fore.RESET}')
-            system('pause > nul')
-            sys.exit()
-
+            self.message(Fore.RED, 'Discord is not running')
+            self.stop()
         except Exception as e:
-            print(f'An error occurred {e}')
-        print(f'{Fore.GREEN}Successfully connected{Fore.RESET}')
+            self.message(Fore.RED, e)
+    
+    def select_browser(self, max):
+        while True:    
+            try:
+                option = int(input(f'\nSelect a browser to continue: '))
+                if 0 <= option < max:
+                    return option
+            except (ValueError, TypeError):
+                self.message(Fore.RED, 'Please pick a number')
+                
+    def browsers_handler(self, browsers):
+        if len(browsers) == 0:
+            self.message(Fore.LIGHTRED_EX, 'Could not locate a running browser')
+            self.stop()
+        
+        if len(browsers) == 1:
+            browser = browsers[0]
+            self.message(Fore.GREEN, f'Found {browser[1]}!')
+            self.browser = Browser(browser)
+        
+        if len(browsers) > 1:
+            self.message(Fore.LIGHTCYAN_EX, f'Found {len(browsers)} running browsers')
+            for i, browser in enumerate(browsers): self.message(Fore.WHITE, f'{Fore.CYAN}[{i}]{Fore.RESET} {browser[1]}')
+            option = self.select_browser(len(browsers))
+            self.message(Fore.CYAN, f'You selected: {browsers[option][1]}')
+            self.browser = Browser(browsers[option])
+
+    def stop(self):
+        self.running = False
+        system('pause > nul')
+        sys.exit()
 
     def run(self):
+        system('cls')
+
         if not self.running:
             init()
-            self.init_settings()
             print(BANNER)
+            self.init_settings()
+            self.browsers_handler(self.detect_browsers())
 
         self.connect_rpc()
+        self.message(Fore.LIGHTGREEN_EX, 'Successfully connected')
         self.running = True
 
         try:
@@ -116,11 +174,9 @@ class TwitchRPC:
         except KeyboardInterrupt:
             self.rpc.close()
         except exceptions.InvalidID:
-            print(
-                f"{Fore.LIGHTRED_EX}Connection lost, reconnecting..{Fore.RESET}")
+            self.message(Fore.LIGHTRED_EX, 'Connection lost, reconnecting..')
             sleep(10)
             self.run()
-
 
 if __name__ == '__main__':
     client = TwitchRPC(":D")
