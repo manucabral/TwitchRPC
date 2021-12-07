@@ -17,8 +17,8 @@
 - Microsoft Edge
 
 ## Usage
-1. Download the last version [here](https://github.com/manucabral/TwitchPresence/releases)
-3. Extract and execute `TwitchRPC.exe`
+1. Download the last version from [here](https://github.com/manucabral/TwitchPresence/releases)
+3. Open `TwitchRPC.exe` and install it
 4. Enjoy
 > If the rich presence doesn't work you can restart discord.
 
