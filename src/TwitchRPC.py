@@ -1,30 +1,24 @@
 from subprocess import check_output, PIPE
-from sqlite3 import connect
-from os import system, getenv, path
-from shutil import copy2
 from pypresence import Presence, exceptions
 from time import time, sleep
 from colorama import init, Fore
-import sys
+from os import system
+from sys import exit
+from requests import get
+from json import loads
 
-APP_NAME = "TwitchRPC"
-APP_FULLNAME = "Twitch Rich Presence"
+NAME = "Twitch Rich Presence"
 AUTHOR = "ne0de"
-VERSION = "0.4"
-
-BROWSERS = [
-    ('Yandex', 'Yandex Browser', 'Chromium', 'browser.exe', '\\Yandex\\YandexBrowser\\User Data\\Default'),
-    ('Chrome', 'Google Chrome', 'Chromium', 'chrome.exe', '\\Google\\Chrome\\User Data\\Default'),
-    ('Edge', 'Microsoft Edge', 'Chromium', 'msedge.exe', '\\Microsoft\\Edge\\User Data\\Default')
-]
+VERSION = "0.5"
 
 BANNER = f'''
 {Fore.LIGHTMAGENTA_EX} 
-  ______         _ __       __    ____  ____  ______
- /_  __/      __(_) /______/ /_  / __ \/ __ \/ ____/
-  / / | | /| / / / __/ ___/ __ \/ /_/ / /_/ / /     
- / /  | |/ |/ / / /_/ /__/ / / / _, _/ ____/ /___   
-/_/   |__/|__/_/\__/\___/_/ /_/_/ |_/_/    \____/   
+████████╗██╗    ██╗██╗████████╗ ██████╗██╗  ██╗██████╗ ██████╗  ██████╗
+╚══██╔══╝██║    ██║██║╚══██╔══╝██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝
+   ██║   ██║ █╗ ██║██║   ██║   ██║     ███████║██████╔╝██████╔╝██║     
+   ██║   ██║███╗██║██║   ██║   ██║     ██╔══██║██╔══██╗██╔═══╝ ██║     
+   ██║   ╚███╔███╔╝██║   ██║   ╚██████╗██║  ██║██║  ██║██║     ╚██████╗
+   ╚═╝    ╚══╝╚══╝ ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝      ╚═════╝
 {Fore.RESET}
 
 {Fore.LIGHTWHITE_EX}Version: {Fore.YELLOW}{VERSION}{Fore.RESET}
@@ -33,78 +27,147 @@ BANNER = f'''
 Press {Fore.YELLOW}CTRL + C {Fore.RESET}to exit
 '''
 
+BROWSERS = [
+    ('Yandex', 'Yandex Browser', 'browser.exe'),
+    ('Chrome', 'Google Chrome', 'chrome.exe'),
+    ('Edge', 'Microsoft Edge', 'msedge.exe'),
+    ('Brave', 'Brave', 'brave.exe'),
+    ('Opera', 'Opera', 'opera.exe'),
+    ('Vivaldi', 'Vivaldi', 'vivaldi.exe'),
+    ('Firefox', 'Mozilla Firefox', 'firefox.exe')
+]
+
+TOKENS = [
+    ('Following',
+     'Live Channels',
+     'Latest Videos',
+     'Hosts You Follow',
+     'Categories',
+     'All Channels You Follow',
+     'Categories',
+     'Top Channels')
+]
+
+
 class Browser:
     def __init__(self, args):
         self.name = args[0]
         self.full_name = args[1]
-        self.type = args[2]
-        self.process_name = args[3]
-        self.path = getenv("LOCALAPPDATA") + args[4]
-        self.db_file = "\\History"
+        self.process_name = args[2]
 
     def running(self):
-        output = check_output(
-            f'wmic process where "name=\'{self.process_name}\'" get ExecutablePath', universal_newlines=True, stderr=PIPE)
-        return True if self.name.lower() in output.lower() else False
-
-    def update_db_file(self):
-        temp_path = getenv("TEMP") + self.db_file
-        original_path = self.path + self.db_file
-        if path.isfile(temp_path):
-            system(f'del {temp_path}')
-        copy2(original_path, temp_path)
-        return temp_path
-
-    def execute_query(self, path, query):
-        cur = connect(path).cursor()
-        result = [a for a in cur.execute(query)]
-        cur.close()
-        return result
+        return True if self.name.lower() in check_output(f'wmic process where "name=\'{self.process_name}\'" get ExecutablePath', universal_newlines=True, stderr=PIPE).lower() else False
 
     def current_website(self):
-        path = self.update_db_file()
-        result = self.execute_query(path, f"SELECT title, url from urls ORDER BY last_visit_time DESC limit 1")
-        return (0, 0) if not result else result[0]
-
+        token = "- Twitch"
+        title = check_output(f'tasklist.exe /fi "imagename eq {self.process_name}" /fo list /v | find "Window Title:"', shell=True, universal_newlines=True, stderr=PIPE).split('\n')[0]
+        return title[14:] if token in check_output(f'tasklist.exe /fi "imagename eq {self.process_name}" /fo list /v | find "Window Title:"', shell=True, universal_newlines=True, stderr=PIPE).split('\n')[0] else False
 
 class TwitchRPC:
     def __init__(self, client_id):
         self.client_id = client_id
-        self.browser = None
-        self.rpc = None
-        self.running = False
+        self.browser = self.rpc = self.running = self.prev_streamer = self.start_time = None
 
-    def message(self, color, m):
-        print(color + m + Fore.RESET)
+    def init_settngs(self):
+        init()
+        system('title ' + NAME)
+        print(BANNER)
 
-    def init_settings(self):
-        system(f'title {APP_FULLNAME}')
+    def message(self, color, msg):
+        print(color + msg + Fore.RESET)
 
-    def is_twitch(self, title, url):
-        return True if "twitch" in title.lower() and "twitch" in url.split('/')[2].lower() else False
+    def check_update(self):
+        data = get("https://api.github.com/repos/manucabral/TwitchRPC/releases").json()
+        versions = []
+        for key in data:
+            versions.append(key['tag_name'])
+        if versions[0] != VERSION:
+            self.message(Fore.LIGHTYELLOW_EX, f'New update is available > {versions[0]}, please update.')
+        else:
+            self.message(Fore.GREEN, "Up to date")
 
-    def detect_browsers(self):
+
+    def get_url(self, title):
+        return "https://www.twitch.tv/" + title.split(' ')[0]
+
+    def get_browsers(self):
         browsers = []
         for browser in BROWSERS:
-            output = check_output(f'wmic process where "name=\'{browser[3]}\'" get ExecutablePath', universal_newlines=True, stderr=PIPE)
+            output = check_output(f'wmic process where "name=\'{browser[2]}\'" get ExecutablePath', universal_newlines=True, stderr=PIPE)
             browsers.append(browser) if browser[0].lower() in output.lower() else None
         return browsers
 
+    def select_browser(self, max):
+        while True:
+            try:
+                option = int(input(f'\nSelect a browser to continue: '))
+                if 0 <= option < max:
+                    return option
+            except (ValueError, TypeError):
+                self.message(Fore.RED, 'Please pick a number')
+
+    def browser_handler(self, browsers):
+        if len(browsers) == 0:
+            self.message(Fore.LIGHTRED_EX, 'Could not locate a running browser')
+            self.stop()
+
+        if len(browsers) == 1:
+            browser = browsers[0]
+            self.message(Fore.GREEN, f'Found {browser[1]}!')
+            self.browser = Browser(browser)
+
+        if len(browsers) > 1:
+            self.message(Fore.LIGHTCYAN_EX, f'Currently {len(browsers)} browsers running..')
+            for i, browser in enumerate(browsers):
+                self.message( Fore.WHITE, f'{Fore.CYAN}[{i}]{Fore.RESET} {browser[1]}')
+            option = self.select_browser(len(browsers))
+            self.message(Fore.CYAN, f'You selected: {browsers[option][1]}')
+            self.browser = Browser(browsers[option])
+
+    def connect_rpc(self):
+        try:
+            self.rpc = Presence(self.client_id, pipe=0)
+            self.rpc.connect()
+        except exceptions.DiscordNotFound:
+            self.message(Fore.LIGHTRED_EX, 'Discord is not running')
+            self.stop()
+        except Exception as e:
+            self.message(Fore.RED, e)
+        self.message(Fore.LIGHTGREEN_EX, 'Successfully connected')
+
+    def get_token(self, title):
+        for token in TOKENS_EN:
+            if token in title:
+                return 'Browsing in ' + token
+        return None
+
+    def twitch_handler(self, title):
+        img = "logo"
+        start_time = button = None
+        details = self.get_token(title)
+        if not details:
+            streamer = title.split(" ")[0]
+            details = 'Watching ' + streamer
+            button = [{"label": "Go to stream", "url": self.get_url(title)}]
+            if streamer != self.prev_streamer:
+                self.start_time = time()
+                self.prev_streamer = streamer
+        return {
+            'details': details,
+            'start': self.start_time,
+            'large_image': img,
+            'buttons': button
+        }
+
     def update_presence(self):
-        title, url = self.browser.current_website()
-        if title == 0:
-            self.message(Fore.LIGHTRED_EX, "Can't find websites in your browser history")
-            return
-        streamer = title.split(" ")[0]
-        previous_streamer = None
-        if self.is_twitch(title, url):
-            if streamer != previous_streamer:
-                start_time = time()
-                previous_streamer = streamer
-                self.rpc.update(details='Watching ' + title.split(" ")[0], start=start_time, large_image="logo")
+        title = self.browser.current_website()
+        data = None
+        if not title:
+            self.rpc.update(details="Offline", large_image='logo')
         else:
-            self.rpc.update(details='Offline', large_image="logo")
-        
+            data = self.twitch_handler(title)
+            self.rpc.update(**data)
+
     def main_event(self):
         while self.running:
             if self.browser.running():
@@ -115,69 +178,27 @@ class TwitchRPC:
                 self.run()
             sleep(15)
 
-    def connect_rpc(self):
-        try:
-            self.rpc = Presence(self.client_id, pipe=0)
-            self.rpc.connect()
-        except exceptions.DiscordNotFound:
-            self.message(Fore.RED, 'Discord is not running')
-            self.stop()
-        except Exception as e:
-            self.message(Fore.RED, e)
-    
-    def select_browser(self, max):
-        while True:    
-            try:
-                option = int(input(f'\nSelect a browser to continue: '))
-                if 0 <= option < max:
-                    return option
-            except (ValueError, TypeError):
-                self.message(Fore.RED, 'Please pick a number')
-                
-    def browsers_handler(self, browsers):
-        if len(browsers) == 0:
-            self.message(Fore.LIGHTRED_EX, 'Could not locate a running browser')
-            self.stop()
-        
-        if len(browsers) == 1:
-            browser = browsers[0]
-            self.message(Fore.GREEN, f'Found {browser[1]}!')
-            self.browser = Browser(browser)
-        
-        if len(browsers) > 1:
-            self.message(Fore.LIGHTCYAN_EX, f'Found {len(browsers)} running browsers')
-            for i, browser in enumerate(browsers): self.message(Fore.WHITE, f'{Fore.CYAN}[{i}]{Fore.RESET} {browser[1]}')
-            option = self.select_browser(len(browsers))
-            self.message(Fore.CYAN, f'You selected: {browsers[option][1]}')
-            self.browser = Browser(browsers[option])
-
     def stop(self):
         self.running = False
         system('pause > nul')
-        sys.exit()
+        exit()
 
     def run(self):
         system('cls')
-
         if not self.running:
-            init()
-            print(BANNER)
-            self.init_settings()
-            self.browsers_handler(self.detect_browsers())
+            self.init_settngs()
+            self.message(Fore.YELLOW, 'Checking updates..')
+            self.check_update()
+            self.message(Fore.YELLOW, 'Scanning browsers on your system..')
+            self.browser_handler(self.get_browsers())
 
         self.connect_rpc()
-        self.message(Fore.LIGHTGREEN_EX, 'Successfully connected')
         self.running = True
-
         try:
             self.main_event()
         except KeyboardInterrupt:
             self.rpc.close()
         except exceptions.InvalidID:
-            self.message(Fore.LIGHTRED_EX, 'Connection lost, reconnecting..')
-            sleep(10)
+            self.message(Fore.LIGHTRED_EX, 'Connection lost, re-connecting in 5 seconds..')
+            sleep(5)
             self.run()
-
-if __name__ == '__main__':
-    client = TwitchRPC(":D")
-    client.run()
