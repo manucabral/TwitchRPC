@@ -8,7 +8,10 @@
 </p>
 
 ## Supported browsers
-> Currently in development..
+- Brave
+- Vivaldi
+- Opera
+- Firefox
 - Yandex Browser
 - Google Chrome
 - Microsoft Edge
