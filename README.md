@@ -17,10 +17,16 @@
 1. Download the last version [here](https://github.com/manucabral/TwitchPresence/releases)
 3. Extract and execute `TwitchRPC.exe`
 4. Enjoy
-
-
-<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/e.png" width="250" title="example">
-
 > If the rich presence doesn't work you can restart discord.
 
 Credits to [pypresence](https://github.com/qwertyquerty/pypresence)
+
+## Images
+<p align="center">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/b.pg.png" width="450" title="example">
+</p>
+
+<p align="center"> 
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/e.png" width="250" title="example">
+</p>
+
