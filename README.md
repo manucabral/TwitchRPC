@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-   A simple Twitch Discord Rich Presence that uses your browser History database.
+   A simple Twitch Discord Rich Presence that show what you're watching.
 </p>
 
 ## Supported browsers
@@ -24,12 +24,14 @@
 
 Credits to [pypresence](https://github.com/qwertyquerty/pypresence)
 
-## Images
-<p align="center">
-<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/b.pg.png" width="450" title="example">
-</p>
+## Previews
 
 <p align="center"> 
-<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/e.png" width="250" title="example">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/browsing.png" width="250" title="browsing">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/watching.png" width="250" title="watching">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/offline.png" width="250" title="offline">
 </p>
 
+<p align="center">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/program.png" width="450" title="program">
+</p>
