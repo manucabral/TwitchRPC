@@ -136,7 +136,7 @@ class TwitchRPC:
         self.message(Fore.LIGHTGREEN_EX, 'Successfully connected')
 
     def get_token(self, title):
-        for token in TOKENS_EN:
+        for token in TOKENS[0]:
             if token in title:
                 return 'Browsing in ' + token
         return None
