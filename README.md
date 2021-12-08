@@ -10,10 +10,9 @@
 - Brave
 - Vivaldi
 - Opera
-- Firefox
 - Yandex Browser
-- Mozilla Firefox
 - Google Chrome
+- Mozilla Firefox
 - Microsoft Edge
 
 ## Usage
