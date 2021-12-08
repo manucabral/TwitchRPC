@@ -1,36 +1,39 @@
-# Brinf RPC
-A simple tool extension of [Brinf](https://github.com/le01q/Unexpected/tree/main/Brinf) that uses Discord Rich Presence to display your current website.
+<p align="center">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/logo.png?raw=true" width="250" title="example">
+</p>
 
-## Supported browsers
+<p align="center">
+   A simple Twitch Discord Rich Presence that show what you're watching.
+</p>
+
+# Supported browsers
+- Brave
+- Vivaldi
+- Opera
+- Firefox
+- Yandex Browser
 - Mozilla Firefox
 - Google Chrome
-- Yandex Browser
+- Microsoft Edge
 
 ## Usage
-1. Download the last version [here](https://github.com/manucabral/Brinf_RPC/releases)
-2. Extract and execute `brinf.exe`
-3. Enjoy
+1. Download the last version from [here](https://github.com/manucabral/TwitchPresence/releases)
+3. Open `TwitchRPC.exe` and install it
+4. Enjoy
 
-If the rich presence doesn't work you can restart discord.
 
-## Requirements
-- Python 3.6+
-- [pypresence](https://github.com/qwertyquerty/pypresence)
+> If the rich presence doesn't work you can restart discord.
 
-## Preview
-<img src="https://github.com/manucabral/Brinf_RPC/blob/main/images/main.png?raw=true" width="250" title="example">
+Credits to [pypresence](https://github.com/qwertyquerty/pypresence)
 
-## Build
-### Clone
-```
-git clone --recursive https://github.com/manucabral/Brinf_RPC.git
-cd Brinf_RPC/src
-```
-### Install requirements
-```
-pip install -r requirements.txt
-```
-### Run
-```
-main.py
-```
+## Previews
+
+<p align="center"> 
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/browsing.png?raw=true" width="250" title="browsing">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/watching.png?raw=true" width="250" title="watching">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/offline.png?raw=true" width="250" title="offline">
+</p>
+
+<p align="center">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/program.png?raw=true" width="450" title="program">
+</p>
