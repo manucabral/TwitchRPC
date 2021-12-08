@@ -1,6 +1,6 @@
 
 <p align="center">
-<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/logo.png" width="250" title="example">
+<img src="https://github.com/manucabral/TwitchRPC/blob/main/assets/logo.png?raw=true" width="250" title="example">
 </p>
 
 <p align="center">
