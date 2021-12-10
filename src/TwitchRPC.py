@@ -1,53 +1,12 @@
+from requests import get, exceptions as rexceptions
 from subprocess import check_output, PIPE
 from pypresence import Presence, exceptions
 from time import time, sleep
 from colorama import init, Fore
 from os import system
 from sys import exit
-from requests import get
 from json import loads
-
-NAME = "Twitch Rich Presence"
-AUTHOR = "ne0de"
-VERSION = "0.5"
-
-BANNER = f'''
-{Fore.LIGHTMAGENTA_EX} 
-████████╗██╗    ██╗██╗████████╗ ██████╗██╗  ██╗██████╗ ██████╗  ██████╗
-╚══██╔══╝██║    ██║██║╚══██╔══╝██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝
-   ██║   ██║ █╗ ██║██║   ██║   ██║     ███████║██████╔╝██████╔╝██║     
-   ██║   ██║███╗██║██║   ██║   ██║     ██╔══██║██╔══██╗██╔═══╝ ██║     
-   ██║   ╚███╔███╔╝██║   ██║   ╚██████╗██║  ██║██║  ██║██║     ╚██████╗
-   ╚═╝    ╚══╝╚══╝ ╚═╝   ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝      ╚═════╝
-{Fore.RESET}
-
-{Fore.LIGHTWHITE_EX}Version: {Fore.YELLOW}{VERSION}{Fore.RESET}
-{Fore.LIGHTWHITE_EX}Author: {Fore.YELLOW}{AUTHOR}{Fore.RESET}
-
-Press {Fore.YELLOW}CTRL + C {Fore.RESET}to exit
-'''
-
-BROWSERS = [
-    ('Yandex', 'Yandex Browser', 'browser.exe'),
-    ('Chrome', 'Google Chrome', 'chrome.exe'),
-    ('Edge', 'Microsoft Edge', 'msedge.exe'),
-    ('Brave', 'Brave', 'brave.exe'),
-    ('Opera', 'Opera', 'opera.exe'),
-    ('Vivaldi', 'Vivaldi', 'vivaldi.exe'),
-    ('Firefox', 'Mozilla Firefox', 'firefox.exe')
-]
-
-TOKENS = [
-    ('Following',
-     'Live Channels',
-     'Latest Videos',
-     'Hosts You Follow',
-     'Categories',
-     'All Channels You Follow',
-     'Categories',
-     'Top Channels')
-]
-
+from constants import *
 
 class Browser:
     def __init__(self, args):
@@ -68,18 +27,29 @@ class TwitchRPC:
         self.client_id = client_id
         self.browser = self.rpc = self.running = self.prev_streamer = self.start_time = None
 
+    def display_logo(self):
+        print(BANNER)
+        self.message(Fore.WHITE, f'Version: {Fore.YELLOW}{VERSION}')
+        self.message(Fore.WHITE, f'Author: {Fore.YELLOW}{AUTHOR}')
+        print("")
+
     def init_settngs(self):
         init()
         system('title ' + NAME)
-        print(BANNER)
+        self.display_logo()
 
     def message(self, color, msg):
         print(color + msg + Fore.RESET)
 
     def check_update(self):
-        data = get("https://api.github.com/repos/manucabral/TwitchRPC/releases").json()
+        res = get("https://api.github.com/repos/manucabral/TwitchRPC/releases")
+        try:
+            res.raise_for_status()
+        except rexceptions.HTTPError as err:
+            self.message(Fore.RED, str(err))
+            return
         versions = []
-        for key in data:
+        for key in res.json():
             versions.append(key['tag_name'])
         if versions[0] != VERSION:
             self.message(Fore.LIGHTYELLOW_EX, f'New update is available > {versions[0]}, please update.')
@@ -89,6 +59,16 @@ class TwitchRPC:
 
     def get_url(self, title):
         return "https://www.twitch.tv/" + title.split(' ')[0]
+
+    def get_streamer_bio(self, streamer):
+        res = get(f"https://api.ivr.fi/twitch/resolve/{streamer}")
+        try:
+            res.raise_for_status()
+        except rexceptions.HTTPError as err:
+            self.message(Fore.RED, str(err))
+            return None
+        data = res.json()
+        return data['bio']
 
     def get_browsers(self):
         browsers = []
@@ -143,19 +123,22 @@ class TwitchRPC:
 
     def twitch_handler(self, title):
         img = "logo"
-        start_time = button = None
+        state = start_time = button = None
         details = self.get_token(title)
         if not details:
             streamer = title.split(" ")[0]
             details = 'Watching ' + streamer
-            button = [{"label": "Go to stream", "url": self.get_url(title)}]
+            state = "No bio" if not self.get_streamer_bio(streamer) else self.get_streamer_bio(streamer)
+            button = [{"label": "Go to stream", "url": self.get_url(title)}, {"label": "Download App", "url": "https://manucabral.github.io/TwitchRPC"}]
             if streamer != self.prev_streamer:
                 self.start_time = time()
                 self.prev_streamer = streamer
         return {
+            'state': state,
             'details': details,
             'start': self.start_time,
             'large_image': img,
+            'large_text': streamer,
             'buttons': button
         }
 
