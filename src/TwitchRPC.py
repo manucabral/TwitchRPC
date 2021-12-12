@@ -132,12 +132,12 @@ class TwitchRPC:
 
     def twitch_handler(self, title):
         img = "logo"
-        state = start_time = button = None
+        state = start_time = button = streamer = None
         details = self.get_token(title)
         if not details:
             streamer = title.split(" ")[0]
             details = 'Watching ' + streamer
-            state = "No bio" if not self.get_streamer_bio(streamer) else self.get_streamer_bio(streamer)
+            state = "No Biography" if not self.get_streamer_bio(streamer) else self.get_streamer_bio(streamer)
             button = [{"label": "Go to stream", "url": self.get_url(title)}, {"label": "Download App", "url": "https://manucabral.github.io/TwitchRPC"}]
             if streamer != self.prev_streamer:
                 self.start_time = time()
