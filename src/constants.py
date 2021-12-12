@@ -1,6 +1,13 @@
 NAME = "Twitch Rich Presence"
 AUTHOR = "Manuel Cabral"
-VERSION = "0.6"
+VERSION = "0.7"
+
+TWITCH_URL = "https://www.twitch.tv/"
+REPO_URL = "https://api.github.com/repos/manucabral/TwitchRPC/releases"
+IVR_REPO = "https://api.ivr.fi/twitch/resolve/"
+
+COLUMNS = 75
+LINES = 30
 
 BANNER = f'''
 ████████╗██╗    ██╗██╗████████╗ ██████╗██╗  ██╗██████╗ ██████╗  ██████╗

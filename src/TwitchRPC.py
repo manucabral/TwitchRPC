@@ -1,6 +1,7 @@
 from requests import get, exceptions as rexceptions
 from subprocess import check_output, PIPE
 from pypresence import Presence, exceptions
+from win10toast import ToastNotifier
 from time import time, sleep
 from colorama import init, Fore
 from os import system
@@ -25,6 +26,7 @@ class Browser:
 class TwitchRPC:
     def __init__(self, client_id):
         self.client_id = client_id
+        self.toast = ToastNotifier()
         self.browser = self.rpc = self.running = self.prev_streamer = self.start_time = None
 
     def display_logo(self):
@@ -36,13 +38,16 @@ class TwitchRPC:
     def init_settngs(self):
         init()
         system('title ' + NAME)
+        system(F'mode con:cols={COLUMNS} lines={LINES}')
         self.display_logo()
 
-    def message(self, color, msg):
+    def message(self, color, msg, toast=False, s=10):
         print(color + msg + Fore.RESET)
+        if toast:
+            self.toast.show_toast(NAME, msg, icon_path="assets/logo.ico", duration=s)
 
     def check_update(self):
-        res = get("https://api.github.com/repos/manucabral/TwitchRPC/releases")
+        res = get(REPO_URL)
         try:
             res.raise_for_status()
         except rexceptions.HTTPError as err:
@@ -52,16 +57,16 @@ class TwitchRPC:
         for key in res.json():
             versions.append(key['tag_name'])
         if versions[0] != VERSION:
-            self.message(Fore.LIGHTYELLOW_EX, f'New update is available > {versions[0]}, please update.')
+            self.message(Fore.LIGHTYELLOW_EX, f'New update is available > {Fore.CYAN}{versions[0]}{Fore.LIGHTYELLOW_EX}, please update.')
         else:
             self.message(Fore.GREEN, "Up to date")
 
 
     def get_url(self, title):
-        return "https://www.twitch.tv/" + title.split(' ')[0]
+        return TWITCH_URL + title.split(' ')[0]
 
     def get_streamer_bio(self, streamer):
-        res = get(f"https://api.ivr.fi/twitch/resolve/{streamer}")
+        res = get(IVR_REPO + streamer)
         try:
             res.raise_for_status()
         except rexceptions.HTTPError as err:
@@ -93,7 +98,7 @@ class TwitchRPC:
 
         if len(browsers) == 1:
             browser = browsers[0]
-            self.message(Fore.GREEN, f'Found {browser[1]}!')
+            self.message(Fore.GREEN, f'{browser[1]} located!')
             self.browser = Browser(browser)
 
         if len(browsers) > 1:
@@ -109,11 +114,12 @@ class TwitchRPC:
             self.rpc = Presence(self.client_id, pipe=0)
             self.rpc.connect()
         except exceptions.DiscordNotFound:
-            self.message(Fore.LIGHTRED_EX, 'Discord is not running')
+            self.message(Fore.LIGHTRED_EX, 'Discord not running', toast=True, s=5)
             self.stop()
         except Exception as e:
             self.message(Fore.RED, e)
-        self.message(Fore.LIGHTGREEN_EX, 'Successfully connected')
+        self.message(Fore.LIGHTGREEN_EX, 'Successfully connected', toast=True)
+
 
     def get_token(self, title):
         for token in TOKENS[0]:
@@ -182,6 +188,6 @@ class TwitchRPC:
         except KeyboardInterrupt:
             self.rpc.close()
         except exceptions.InvalidID:
-            self.message(Fore.LIGHTRED_EX, 'Connection lost, re-connecting in 5 seconds..')
+            self.message(Fore.LIGHTRED_EX, 'Connection lost, re-connecting in 5 seconds..', toast=True)
             sleep(5)
             self.run()
