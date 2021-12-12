@@ -8,6 +8,7 @@ from os import system
 from sys import exit
 from json import loads
 from constants import *
+
 class Browser:
     def __init__(self, args, lang):
         self.name = args[0]
@@ -22,7 +23,8 @@ class Browser:
         token = "- Twitch"
         field = "Window Title:" if "en" in self.lang else "Título de ventana:"
         title = check_output(f'tasklist.exe /fi "imagename eq {self.process_name}" /fo list /v | find "{field}"', shell=True, universal_newlines=True, stderr=PIPE).split('\n')[0]
-        return title[14:] if token in check_output(f'tasklist.exe /fi "imagename eq {self.process_name}" /fo list /v | find "{field}"', shell=True, universal_newlines=True, stderr=PIPE).split('\n')[0] else False
+        return title[14 if "en" in self.lang else 20:] if token in check_output(f'tasklist.exe /fi "imagename eq {self.process_name}" /fo list /v | find "{field}"', shell=True, universal_newlines=True, stderr=PIPE).split('\n')[0] else False
+
 class TwitchRPC:
     def __init__(self, client_id):
         self.client_id = client_id
@@ -151,6 +153,7 @@ class TwitchRPC:
 
     def update_presence(self):
         title = self.browser.current_website()
+        print('title: ' + title)
         data = None
         if not title:
             self.rpc.update(details="Offline", large_image='logo')
