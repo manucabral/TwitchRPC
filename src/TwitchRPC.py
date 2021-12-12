@@ -153,7 +153,6 @@ class TwitchRPC:
 
     def update_presence(self):
         title = self.browser.current_website()
-        print('title: ' + title)
         data = None
         if not title:
             self.rpc.update(details="Offline", large_image='logo')
