@@ -18,7 +18,8 @@
 ## Usage
 1. Download the last version from [here](https://github.com/manucabral/TwitchPresence/releases)
 3. Extract and open `TwitchRPC.exe`
-4. Enjoy
+
+> Requires Discord running and "Display current activity" activated
 
 > If the rich presence doesn't work you can restart discord.
 
