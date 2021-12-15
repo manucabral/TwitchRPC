@@ -1,6 +1,6 @@
 NAME = "Twitch Rich Presence"
 AUTHOR = "Manuel Cabral"
-VERSION = "0.7"
+VERSION = "0.8"
 
 TWITCH_URL = "https://www.twitch.tv/"
 REPO_URL = "https://api.github.com/repos/manucabral/TwitchRPC/releases"
@@ -37,5 +37,7 @@ TOKENS = [
      'All Channels You Follow',
      'Categories',
      'Top Channels',
-     'Twitch Developers')
+     'Twitch Developers',
+     'Video Producer',
+     )
 ]

@@ -46,8 +46,11 @@ class TwitchRPC:
 
     def message(self, color, msg, toast=False, s=10):
         print(color + msg + Fore.RESET)
-        if toast:
-            self.toast.show_toast(NAME, msg, icon_path="assets/logo.ico", duration=s)
+        try:
+            if toast:
+                self.toast.show_toast(NAME, msg, icon_path="assets/logo.ico", duration=s)
+        except KeyboardInterrupt:
+            return
 
     def check_update(self):
         res = get(REPO_URL)
@@ -136,7 +139,8 @@ class TwitchRPC:
         details = self.get_token(title)
         if not details:
             streamer = title.split(" ")[0]
-            details = 'Watching ' + streamer
+            mod = "'s" in streamer
+            details = 'Watching ' + streamer if not mod else 'Moderating ' + streamer[:-2]
             state = "No Biography" if not self.get_streamer_bio(streamer) else self.get_streamer_bio(streamer)
             button = [{"label": "Go to stream", "url": self.get_url(title)}, {"label": "Download App", "url": "https://manucabral.github.io/TwitchRPC"}]
             if streamer != self.prev_streamer:
